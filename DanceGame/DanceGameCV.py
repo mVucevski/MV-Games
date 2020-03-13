@@ -3,9 +3,9 @@ import cv2 as cv
 import math
 import time
 
-input = "video1.mp4"
+input = 0
 
-def main():
+def initCV():
     cap = cv.VideoCapture(input)
 
     if not cap.isOpened():
@@ -13,38 +13,56 @@ def main():
         cap.release()
         return
 
-    cv.namedWindow("Dance Game")
+    #cv.namedWindow("Dance Game")
 
     pFrameBGR = None
 
-    while cap.isOpened():
-        success, frameBGR = cap.read()
+    return cap
 
-        if not success or cv.waitKey(1) == 27:
-            break
+def mainCV(cap, pFrameBGR=None):
 
-        frameBGR = cv.pyrDown(frameBGR)
+    success, frameBGR = cap.read()
 
-        if pFrameBGR is None:
-            pFrameBGR = frameBGR
-            continue
+    if not success:
+        return
 
-        pBlocks = divideImageInBlocks(pFrameBGR, 96, 96)
-        blocks = divideImageInBlocks(frameBGR, 96, 96)
-        masks = []
-        for i in range(len(blocks)):
-            masks.append(detectMotion(pBlocks[i], blocks[i]))
-        movements = []
-        for mask in masks:
-            movements.append(cv.countNonZero(mask))
-        print(movements)
+    frameBGR = cv.pyrDown(frameBGR)
 
+    if pFrameBGR is None:
         pFrameBGR = frameBGR
 
-        cv.imshow("Dance Game", frameBGR)
-        time.sleep(1 / 60)
-    cap.release()
+    pBlocks = divideImageInBlocks(pFrameBGR, 96, 96)
+    blocks = divideImageInBlocks(frameBGR, 96, 96)
 
+    masks = []
+    for i in range(len(blocks)):
+        masks.append(detectMotion(pBlocks[i], blocks[i]))
+    movements = []
+    # change = []
+    for i in range(masks.__len__()):
+        # movements.append(cv.countNonZero(masks[i]))
+        isPressed = detectChange(masks[i])
+        movements.append(isPressed)
+        if isPressed:
+            print("Pressed " + str(i))
+
+    pFrameBGR = frameBGR
+
+    return pFrameBGR, movements
+    #cap.release()
+
+def detectChange(block, percentage=0.3):
+    totalNumPixels = block.shape[0] * block.shape[1]
+    requiredNumPixels = totalNumPixels * percentage
+    nonZeroPixels = cv.countNonZero(block)
+
+    # print(totalNumPixels)
+    # print(nonZeroPixels)
+
+    if (nonZeroPixels >= requiredNumPixels):
+        return True
+
+    return False
 
 def detectMotion(previousFrameBGR, currentFrameBGR, sensitivity=25, noiseDampening=2):
     prev = cv.cvtColor(previousFrameBGR, cv.COLOR_BGR2GRAY)
@@ -60,6 +78,8 @@ def detectMotion(previousFrameBGR, currentFrameBGR, sensitivity=25, noiseDampeni
 
     return mask
 
+def convertBGR2RGB(image):
+    return cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
 def divideImageInBlocks(frameBGR, blockWidth, blockHeight):
     height = frameBGR.shape[0]
@@ -71,7 +91,7 @@ def divideImageInBlocks(frameBGR, blockWidth, blockHeight):
     blocks.append(frameBGR[0:blockHeight, width - blockWidth:width])
 
     blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), 0:blockWidth])
-    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
+    #blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
     blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), width - blockWidth:width])
 
     blocks.append(frameBGR[height - blockHeight:height, 0:blockWidth])

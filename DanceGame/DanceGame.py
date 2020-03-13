@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import DanceGameCV as DGCV
 
 WIDTH = 640
 HEIGHT = 480
@@ -238,10 +239,14 @@ def main():
 
     arrowTimer = 1
 
+    cap = DGCV.initCV()
+    frame = None
+
     while True:
         mousePos = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                cap.release()
                 pygame.quit()
                 return
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -257,6 +262,13 @@ def main():
                     arrowTimer = random.randint(1000, 2000)
 
         surface.fill(DARKGRAY)
+        frame, movments = DGCV.mainCV(cap, frame)
+        draw_frame = DGCV.convertBGR2RGB(frame)
+        draw_frame = pygame.surfarray.make_surface(draw_frame)
+        draw_frame = pygame.transform.rotozoom(draw_frame, -90, 2)
+        surface.blit(draw_frame, (0,0))
+
+        print(movments)
 
         scene.update(mousePos)
         scene.draw(surface)
