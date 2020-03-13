@@ -83,7 +83,7 @@ def divideImageInBlocks(image, rows = 2, cols = 2, drawLines = False):
             block = image[int(i*height/rows):int(i*height/rows+height/rows), int(j*width/cols):int(j *width/cols+width/cols)]
             #cv2.imshow("Block: " + str(i) + str(j), block)
             if drawLines:
-                cv2.line(image, (int(i*width/cols+width/cols), 0), (int(i*width/cols+width/cols), height), color=WHITE, lineType=cv2.LINE_AA, thickness=1)
+                cv2.line(image, (int(j*width/cols+width/cols), 0), (int(j*width/cols+width/cols), height), color=WHITE, lineType=cv2.LINE_AA, thickness=1)
             blockList.append(block)
         if drawLines:
             cv2.line(image, (0, int(i * height / rows + height / rows)), (width, int(i * height / rows + height / rows)), color=WHITE, lineType=cv2.LINE_AA, thickness=1)

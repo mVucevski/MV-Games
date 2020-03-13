@@ -8,10 +8,20 @@ DARKGRAY = (64, 64, 64)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 FPS = 60
+DIR = [(0, 0), (0, HEIGHT/2), (0, HEIGHT), (WIDTH, 0), (WIDTH, HEIGHT/2), (WIDTH, HEIGHT), (WIDTH/2, 0), (WIDTH/2, HEIGHT)]
+
+def load_image(image_name):
+    try:
+        image = pygame.image.load(image_name)
+    except pygame.error:
+        print('Cannot load image:', image_name)
+        raise SystemExit()
+    image = image.convert_alpha()
+    return image
 
 class Arrow:
     def __init__(self, image, position=(0, 0), pointTowards=(0, 0), speed=4):
-        self.image = pygame.image.load(image)
+        self.image = image
         self.position = position
         self.rotation = math.atan2(-pointTowards[1]+position[1], pointTowards[0]-position[0])
         self.image = pygame.transform.rotate(self.image, self.rotation*180/math.pi)
@@ -25,7 +35,7 @@ class Arrow:
     def draw(self, surface):
         x = self.position[0] - self.image.get_rect().center[0]
         y = self.position[1] - self.image.get_rect().center[1]
-        surface.blit(self.image, (x, y))
+        surface.blit(self.image, (int(x), int(y)))
 
     def outOfBounds(self):
         if self.position[0] < -self.image.get_rect().center[0]:
@@ -52,9 +62,10 @@ def pointInRectangle(point, rectangle):
     return False
 
 class Scene:
-    def __init__(self):
+    def __init__(self, arrowImage):
         self.arrows = []
-        self.circle = pygame.image.load("circle.png")
+        self.circle = load_image("circle.png")
+        self.arrowImage = arrowImage
         self.circle = pygame.transform.scale(self.circle, (128, 128))
         self.collisionBoxes = []
         self.score = 0
@@ -73,6 +84,42 @@ class Scene:
         self.collisionBoxes.append((0, HEIGHT - boxHeight, boxWidth, boxHeight))
         self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, HEIGHT - boxHeight, boxWidth, boxHeight))
         self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT - boxHeight, boxWidth, boxHeight))
+
+        self.initGoalsArrows()
+
+
+    def initGoalsArrows(self):
+
+        center = (WIDTH / 2, HEIGHT / 2)
+        img_size = self.arrowImage.get_size()
+
+        # Left Direction Arrows
+        arrow1 = Arrow(self.arrowImage, center, pointTowards=DIR[0], speed=0)
+        arrow2 = Arrow(self.arrowImage, center, pointTowards=DIR[1], speed=0)
+        arrow3 = Arrow(self.arrowImage, center, pointTowards=DIR[2], speed=0)
+
+        arrow1.position = (arrow1.image.get_rect().center[0], arrow1.image.get_rect().center[1])
+        arrow2.position = (arrow1.image.get_rect().center[0], HEIGHT // 2)
+        arrow3.position = (arrow1.image.get_rect().center[0], HEIGHT - arrow1.image.get_rect().center[1])
+
+        # Right Direction Arrows
+        arrow4 = Arrow(self.arrowImage, center, pointTowards=DIR[3], speed=0)
+        arrow5 = Arrow(self.arrowImage, center, pointTowards=DIR[4], speed=0)
+        arrow6 = Arrow(self.arrowImage, center, pointTowards=DIR[5], speed=0)
+
+        arrow4.position = (WIDTH - arrow1.image.get_rect().center[0], arrow1.image.get_rect().center[1])
+        arrow5.position = (WIDTH - arrow1.image.get_rect().center[0], HEIGHT // 2)
+        arrow6.position = (WIDTH - arrow1.image.get_rect().center[0], HEIGHT - arrow1.image.get_rect().center[1])
+
+        # Up & Down Arrows
+        arrow7 = Arrow(self.arrowImage, center, pointTowards=DIR[6], speed=0)
+        arrow8 = Arrow(self.arrowImage, center, pointTowards=DIR[7], speed=0)
+
+        arrow7.position = (WIDTH//2, arrow1.image.get_rect().center[1])
+        arrow8.position = (WIDTH//2, HEIGHT - arrow1.image.get_rect().center[1])
+
+
+        self.goalsArrows = [arrow1, arrow2, arrow3, arrow4, arrow5, arrow6, arrow7, arrow8]
 
     def addArrow(self, arrow):
         self.arrows.append(arrow)
@@ -93,13 +140,17 @@ class Scene:
         for arrow in self.arrows:
             arrow.draw(surface)
 
-        surface.blit(self.circle, (WIDTH/2-self.circle.get_rect().center[0], HEIGHT/2-self.circle.get_rect().center[1]))
+        surface.blit(self.circle, (int(WIDTH/2-self.circle.get_rect().center[0]), int(HEIGHT/2-self.circle.get_rect().center[1])))
 
         for box in self.collisionBoxes:
+            box = (int(box[0]), int(box[1]), box[2], box[3])
             pygame.draw.rect(surface, RED, box, 1)
 
+        for goal in self.goalsArrows:
+            goal.draw(surface)
+
         score = self.font.render(str(self.score), 1, WHITE)
-        surface.blit(score, (WIDTH/2-score.get_rect()[2]/2, HEIGHT/2-score.get_rect()[3]/3))
+        surface.blit(score, (int(WIDTH/2-score.get_rect()[2]/2), int(HEIGHT/2-score.get_rect()[3]/3)))
 
 def main():
     pygame.init()
@@ -108,7 +159,8 @@ def main():
     surface = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('Dance Game')
 
-    scene = Scene()
+    arrow_image = load_image("arrow.png")
+    scene = Scene(arrow_image)
 
     arrowTimer = 1
 
@@ -124,10 +176,8 @@ def main():
         if arrowTimer > 0:
             arrowTimer -= delta
             if arrowTimer <= 0:
-                c = random.choice(
-                    [(0, 0), (WIDTH / 2, 0), (WIDTH, 0), (0, HEIGHT / 2), (WIDTH, HEIGHT / 2), (0, HEIGHT),
-                     (WIDTH / 2, HEIGHT), (WIDTH, HEIGHT)])
-                arrow = Arrow("arrow.png", (WIDTH / 2, HEIGHT / 2), c)
+                c = random.choice(DIR)
+                arrow = Arrow(arrow_image, (WIDTH / 2, HEIGHT / 2), c)
                 scene.addArrow(arrow)
                 arrowTimer = random.randint(1000, 2000)
 
