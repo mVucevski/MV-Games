@@ -7,8 +7,12 @@ HEIGHT = 480
 DARKGRAY = (64, 64, 64)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 51)
+PINK = (250, 104, 241)
+GREEN = (0, 255, 0)
 FPS = 60
 DIR = [(0, 0), (0, HEIGHT/2), (0, HEIGHT), (WIDTH, 0), (WIDTH, HEIGHT/2), (WIDTH, HEIGHT), (WIDTH/2, 0), (WIDTH/2, HEIGHT)]
+COLOR_PICKER = [WHITE, RED, YELLOW, PINK, GREEN]
 
 def load_image(image_name):
     try:
@@ -18,6 +22,40 @@ def load_image(image_name):
         raise SystemExit()
     image = image.convert_alpha()
     return image
+
+def blit_alpha(target, source, location, opacity, color = (255,255,255)):
+    x = int(location[0])
+    y = int(location[1])
+    temp = pygame.Surface((source.get_width(), source.get_height())).convert()
+    temp.blit(target, (-x, -y))
+    temp.blit(source, (0, 0))
+
+    colorFill = color + (0,)
+    temp.fill(colorFill, None, pygame.BLEND_RGBA_MULT)
+    temp.set_alpha(opacity)
+
+    target.blit(temp, (x,y))
+
+class Glow:
+    def __init__(self, image, position, color, incFactor=10):
+        self.image = image
+        self.position = position
+        self.color = color
+        self.increaseFactor = incFactor
+        self.currentOpacity = 0
+        self.Active = True
+
+    def update(self):
+        self.currentOpacity += self.increaseFactor
+
+        if self.increaseFactor > 0 and self.currentOpacity >= 220:
+            self.increaseFactor *= -1
+        elif self.increaseFactor < 0 and self.currentOpacity <= 30:
+            self.Active = False
+
+    def draw(self, screen):
+        if self.Active:
+            blit_alpha(screen, self.image, self.position, self.currentOpacity, self.color)
 
 class Arrow:
     def __init__(self, image, position=(0, 0), pointTowards=(0, 0), speed=4):
@@ -70,6 +108,9 @@ class Scene:
         self.collisionBoxes = []
         self.score = 0
         self.font = pygame.font.Font('freesansbold.ttf', 32)
+        self.glow = pygame.image.load("glow-final.png")
+        self.glow = pygame.transform.scale(self.glow, (100, 100))
+        self.glowObjects = []
 
         boxWidth = 96
         boxHeight = 96
@@ -133,8 +174,16 @@ class Scene:
             if mousePos is not None:
                 for cb in self.collisionBoxes:
                     if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
+                        randomColor = random.choice(COLOR_PICKER)
+                        glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
+                        self.glowObjects.append(glowObj)
                         self.arrows.remove(arrow)
                         self.score += 10
+
+        for glowObj in self.glowObjects:
+            glowObj.update()
+            if not glowObj.Active:
+                self.glowObjects.remove(glowObj)
 
     def draw(self, surface):
         for arrow in self.arrows:
@@ -148,6 +197,9 @@ class Scene:
 
         for goal in self.goalsArrows:
             goal.draw(surface)
+
+        for glowObj in self.glowObjects:
+            glowObj.draw(surface)
 
         score = self.font.render(str(self.score), 1, WHITE)
         surface.blit(score, (int(WIDTH/2-score.get_rect()[2]/2), int(HEIGHT/2-score.get_rect()[3]/3)))
