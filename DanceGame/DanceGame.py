@@ -30,8 +30,8 @@ def blit_alpha(target, source, location, opacity, color = (255,255,255)):
     temp.blit(target, (-x, -y))
     temp.blit(source, (0, 0))
 
-    colorFill = color + (0,)
-    temp.fill(colorFill, None, pygame.BLEND_RGBA_MULT)
+    #colorFill = color + (0,)
+    #temp.fill(colorFill, None, pygame.BLEND_RGBA_MULT)
     temp.set_alpha(opacity)
 
     target.blit(temp, (x,y))
@@ -127,7 +127,16 @@ class Scene:
         self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT - boxHeight, boxWidth, boxHeight))
 
         self.initGoalsArrows()
+        self.initMusic()
+        self.end_game = False
 
+    def initMusic(self):
+        pygame.mixer.pre_init(44100, -16, 2, 2048)
+        pygame.mixer.init()
+        pygame.mixer.music.load('Nathaniel_Wyvern_-_Infiltrators.mp3')
+        #Za testiranje, kratok zvuk
+        #pygame.mixer.music.load('pizza-sold.mp3')
+        pygame.mixer.music.play()
 
     def initGoalsArrows(self):
 
@@ -166,43 +175,56 @@ class Scene:
         self.arrows.append(arrow)
 
     def update(self, mousePos):
-        for arrow in self.arrows:
-            arrow.update()
-            if arrow.outOfBounds():
-                self.arrows.remove(arrow)
-                self.score -= 10
-            if mousePos is not None:
-                for cb in self.collisionBoxes:
-                    if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
-                        randomColor = random.choice(COLOR_PICKER)
-                        glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
-                        self.glowObjects.append(glowObj)
-                        self.arrows.remove(arrow)
-                        self.score += 10
+        if pygame.mixer.music.get_busy():
+            for arrow in self.arrows:
+                arrow.update()
+                if arrow.outOfBounds():
+                    self.arrows.remove(arrow)
+                    self.score -= 10
+                if mousePos is not None:
+                    for cb in self.collisionBoxes:
+                        if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
+                            randomColor = random.choice(COLOR_PICKER)
+                            glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
+                            self.glowObjects.append(glowObj)
+                            self.arrows.remove(arrow)
+                            self.score += 10
 
-        for glowObj in self.glowObjects:
-            glowObj.update()
-            if not glowObj.Active:
-                self.glowObjects.remove(glowObj)
+            for glowObj in self.glowObjects:
+                glowObj.update()
+                if not glowObj.Active:
+                    self.glowObjects.remove(glowObj)
+
+
+        else:
+            #print("END...")
+            self.end_game = True
 
     def draw(self, surface):
-        for arrow in self.arrows:
-            arrow.draw(surface)
+        if not self.end_game:
+            for arrow in self.arrows:
+                arrow.draw(surface)
 
-        surface.blit(self.circle, (int(WIDTH/2-self.circle.get_rect().center[0]), int(HEIGHT/2-self.circle.get_rect().center[1])))
+            surface.blit(self.circle, (int(WIDTH/2-self.circle.get_rect().center[0]), int(HEIGHT/2-self.circle.get_rect().center[1])))
 
-        for box in self.collisionBoxes:
-            box = (int(box[0]), int(box[1]), box[2], box[3])
-            pygame.draw.rect(surface, RED, box, 1)
+            for box in self.collisionBoxes:
+                box = (int(box[0]), int(box[1]), box[2], box[3])
+                pygame.draw.rect(surface, RED, box, 1)
 
-        for goal in self.goalsArrows:
-            goal.draw(surface)
+            for goal in self.goalsArrows:
+                goal.draw(surface)
 
-        for glowObj in self.glowObjects:
-            glowObj.draw(surface)
+            for glowObj in self.glowObjects:
+                glowObj.draw(surface)
 
-        score = self.font.render(str(self.score), 1, WHITE)
-        surface.blit(score, (int(WIDTH/2-score.get_rect()[2]/2), int(HEIGHT/2-score.get_rect()[3]/3)))
+            score = self.font.render(str(self.score), 1, WHITE)
+            surface.blit(score, (int(WIDTH/2-score.get_rect()[2]/2), int(HEIGHT/2-score.get_rect()[3]/3)))
+        else:
+            score = self.font.render(str(self.score), 1, WHITE)
+            surface.blit(score, (int(WIDTH / 2 - score.get_rect()[2] / 2), int(HEIGHT / 2 - score.get_rect()[3] / 3)))
+
+            end_text = self.font.render(str("GAME OVER"), 1, WHITE)
+            surface.blit(end_text, (int(WIDTH / 2 - score.get_rect()[2] / 2) - 80, int(HEIGHT / 2 - score.get_rect()[3] / 3) - 50))
 
 def main():
     pygame.init()
@@ -228,10 +250,11 @@ def main():
         if arrowTimer > 0:
             arrowTimer -= delta
             if arrowTimer <= 0:
-                c = random.choice(DIR)
-                arrow = Arrow(arrow_image, (WIDTH / 2, HEIGHT / 2), c)
-                scene.addArrow(arrow)
-                arrowTimer = random.randint(1000, 2000)
+                if not scene.end_game:
+                    c = random.choice(DIR)
+                    arrow = Arrow(arrow_image, (WIDTH / 2, HEIGHT / 2), c)
+                    scene.addArrow(arrow)
+                    arrowTimer = random.randint(1000, 2000)
 
         surface.fill(DARKGRAY)
 
