@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv
 import math
 import time
+from VideoGet import VideoGet
 
 input = 0
 
@@ -17,11 +18,16 @@ def initCV():
 
     pFrameBGR = None
 
-    return cap
+    video_getter = VideoGet(input).start()
 
-def mainCV(cap, pFrameBGR=None):
 
-    success, frameBGR = cap.read()
+    return cap, video_getter
+
+def mainCV(cap, pFrameBGR=None, video_getter=None):
+
+    #success, frameBGR = cap.read()
+    #if video_getter:
+    success, frameBGR = video_getter.grabbed, video_getter.frame
 
     if not success:
         return
@@ -101,8 +107,6 @@ def divideImageInBlocks(frameBGR, blockWidth, blockHeight):
     return blocks
 
 
-if __name__ == "__main__":
-    main()
 
 
 

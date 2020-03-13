@@ -239,13 +239,14 @@ def main():
 
     arrowTimer = 1
 
-    cap = DGCV.initCV()
+    cap, video_getter = DGCV.initCV()
     frame = None
 
     while True:
         mousePos = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                video_getter.stop()
                 cap.release()
                 pygame.quit()
                 return
@@ -262,7 +263,7 @@ def main():
                     arrowTimer = random.randint(1000, 2000)
 
         surface.fill(DARKGRAY)
-        frame, movments = DGCV.mainCV(cap, frame)
+        frame, movments = DGCV.mainCV(cap, frame, video_getter)
         draw_frame = DGCV.convertBGR2RGB(frame)
         draw_frame = pygame.surfarray.make_surface(draw_frame)
         draw_frame = pygame.transform.rotozoom(draw_frame, -90, 2)
