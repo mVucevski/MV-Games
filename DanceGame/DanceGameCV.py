@@ -4,7 +4,7 @@ import math
 import time
 from VideoGet import VideoGet
 
-input = "video1.mp4"
+input = 0
 
 CLICKS = []
 
@@ -60,7 +60,7 @@ def mainCV(cap, pFrameBGR=None, video_getter=None):
     return pFrameBGR, movements
     #cap.release()
 
-def detectChange(block, percentage=0.3):
+def detectChange(block, percentage=0.1):
     totalNumPixels = block.shape[0] * block.shape[1]
     requiredNumPixels = totalNumPixels * percentage
     nonZeroPixels = cv.countNonZero(block)
@@ -95,17 +95,17 @@ def divideImageInBlocks(frameBGR, blockWidth, blockHeight):
     width = frameBGR.shape[1]
     blocks = []
 
-    blocks.append(frameBGR[0:blockHeight, 0:blockWidth])
-    blocks.append(frameBGR[0:blockHeight, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
-    blocks.append(frameBGR[0:blockHeight, width - blockWidth:width])
-
-    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), 0:blockWidth])
-    #blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
-    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), width - blockWidth:width])
-
     blocks.append(frameBGR[height - blockHeight:height, 0:blockWidth])
     blocks.append(frameBGR[height - blockHeight:height, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
     blocks.append(frameBGR[height - blockHeight:height, width - blockWidth:width])
+
+    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), width - blockWidth:width])
+    #blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
+    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), 0:blockWidth])
+
+    blocks.append(frameBGR[0:blockHeight, 0:blockWidth])
+    blocks.append(frameBGR[0:blockHeight, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
+    blocks.append(frameBGR[0:blockHeight, width - blockWidth:width])
 
     return blocks
 

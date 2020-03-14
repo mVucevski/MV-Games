@@ -116,16 +116,16 @@ class Scene:
         boxWidth = 96
         boxHeight = 96
 
-        self.collisionBoxes.append((0, 0, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH/2-boxWidth/2, 0, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH - boxWidth, 0, boxWidth, boxHeight))
-
-        self.collisionBoxes.append((0, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
-
         self.collisionBoxes.append((0, HEIGHT - boxHeight, boxWidth, boxHeight))
         self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, HEIGHT - boxHeight, boxWidth, boxHeight))
         self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT - boxHeight, boxWidth, boxHeight))
+
+        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
+        self.collisionBoxes.append((0, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
+
+        self.collisionBoxes.append((0, 0, boxWidth, boxHeight))
+        self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, 0, boxWidth, boxHeight))
+        self.collisionBoxes.append((WIDTH - boxWidth, 0, boxWidth, boxHeight))
 
         self.initGoalsArrows()
         self.initMusic()
