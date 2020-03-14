@@ -4,7 +4,10 @@ import math
 import time
 from VideoGet import VideoGet
 
-input = 0
+input = "video1.mp4"
+
+CLICKS = []
+
 
 def initCV():
     cap = cv.VideoCapture(input)
@@ -45,12 +48,12 @@ def mainCV(cap, pFrameBGR=None, video_getter=None):
         masks.append(detectMotion(pBlocks[i], blocks[i]))
     movements = []
     # change = []
+    CLICKS.clear()
     for i in range(masks.__len__()):
         # movements.append(cv.countNonZero(masks[i]))
         isPressed = detectChange(masks[i])
         movements.append(isPressed)
-        if isPressed:
-            print("Pressed " + str(i))
+        CLICKS.append(isPressed)
 
     pFrameBGR = frameBGR
 

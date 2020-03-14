@@ -182,14 +182,22 @@ class Scene:
                 if arrow.outOfBounds():
                     self.arrows.remove(arrow)
                     self.score -= 10
-                if mousePos is not None:
-                    for cb in self.collisionBoxes:
-                        if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
-                            randomColor = random.choice(COLOR_PICKER)
-                            glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
-                            self.glowObjects.append(glowObj)
-                            self.arrows.remove(arrow)
-                            self.score += 10
+                # if mousePos is not None:
+                #     for cb in self.collisionBoxes:
+                #         if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
+                #             randomColor = random.choice(COLOR_PICKER)
+                #             glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
+                #             self.glowObjects.append(glowObj)
+                #             self.arrows.remove(arrow)
+                #             self.score += 10
+                for i in range(len(self.collisionBoxes)):
+                    cb = self.collisionBoxes[i]
+                    if pointInRectangle(arrow.position, cb) and DGCV.CLICKS[i]:
+                        randomColor = random.choice(COLOR_PICKER)
+                        glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
+                        self.glowObjects.append(glowObj)
+                        self.arrows.remove(arrow)
+                        self.score += 10
 
             for glowObj in self.glowObjects:
                 glowObj.update()
@@ -198,7 +206,6 @@ class Scene:
 
 
         else:
-            #print("END...")
             self.end_game = True
 
     def draw(self, surface):
@@ -267,9 +274,7 @@ def main():
         draw_frame = DGCV.convertBGR2RGB(frame)
         draw_frame = pygame.surfarray.make_surface(draw_frame)
         draw_frame = pygame.transform.rotozoom(draw_frame, -90, 2)
-        surface.blit(draw_frame, (0,0))
-
-        print(movments)
+        surface.blit(draw_frame, (0, 0))
 
         scene.update(mousePos)
         scene.draw(surface)

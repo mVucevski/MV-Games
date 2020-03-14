@@ -7,7 +7,6 @@ class VideoGet:
         self.stream = cv2.VideoCapture(src)
         (self.grabbed, self.frame) = self.stream.read()
         self.stopped = False
-        print(self.grabbed)
 
     def start(self):
         Thread(target=self.get, args=()).start()
