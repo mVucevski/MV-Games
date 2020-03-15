@@ -2,6 +2,7 @@ import pygame
 import cv2 as cv
 import random
 import math
+import colorsys
 
 WIDTH = 640
 HEIGHT = 480
@@ -19,9 +20,10 @@ MOUSEPOS = None
 MOUSELCLICK = False
 
 class Box:
-    def __init__(self, image, position, type=0, rotation=0, speed=4):
+    def __init__(self, image, position, color, type, rotation=0, speed=4):
         self.image = pygame.transform.rotate(image, rotation)
         self.position = position
+        self.color = color
         self.type = type
         self.rotation = rotation
         self.speed = speed
@@ -31,11 +33,7 @@ class Box:
         x, y, w, h = self.image.get_rect()
         x = self.position[0] - w/2
         y = self.position[1] - h/2
-        if self.type == 0:
-            color = (128, 128, 0)
-        if self.type == 1:
-            color = (0, 128, 128)
-        pygame.draw.rect(surface, color, self.get_rect())
+        pygame.draw.rect(surface, self.color, self.get_rect())
         surface.blit(self.image, (x, y))
 
 
@@ -89,11 +87,8 @@ class Scene:
                     self.boxes.remove(box)
 
 
-    def spawnBox(self):
-        direction = random.choice([0, 90, 180, 270])
-        position = random.choice([(WIDTH*1/4, 0), (WIDTH*3/4, 0)])
-        type = random.randint(0, 1)
-        self.boxes.append(Box(ARROW, position, type, direction))
+    def spawnBox(self, position, color, type, direction):
+        self.boxes.append(Box(ARROW, position, color, type, direction))
 
 
 def pointInRectangle(point, rectangle):
@@ -120,7 +115,7 @@ def main():
     runGame(colors)
 
 
-def runGame(colors):
+def runGame(hsvcolors):
     pygame.init()
     fpsClock = pygame.time.Clock()
     delta = 0
@@ -139,6 +134,12 @@ def runGame(colors):
     spawnBoxTimer = 1
     pCenters = None
 
+    rgbcolors = []
+    for hsv in hsvcolors:
+        rgb = colorsys.hsv_to_rgb(hsv[0] * 2, hsv[1] / 255, hsv[2] / 255)
+        rgb = (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
+        rgbcolors.append(rgb)
+
     while cap.isOpened():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -156,13 +157,18 @@ def runGame(colors):
         if spawnBoxTimer > 0:
             spawnBoxTimer -= delta
             if spawnBoxTimer <= 0:
-                scene.spawnBox()
+                position = random.choice([(WIDTH * 1 / 4, 0), (WIDTH * 3 / 4, 0)])
+                direction = random.choice([0, 90, 180, 270])
+                type = random.randint(0, 1)
+                color = rgbcolors[type]
+                scene.spawnBox(position, color, type, direction)
                 spawnBoxTimer = random.randint(1000, 2000)
 
         surface.fill(DARKGRAY)
 
         frameBGR = cv.resize(frameBGR, (WIDTH, HEIGHT))
-        centers = getCenters(frameBGR, colors)
+        frameBGR = cv.flip(frameBGR, 1)
+        centers = getCenters(frameBGR, hsvcolors)
 
         img = cvimage_to_pygame(frameBGR)
         surface.blit(img, (0, 0))
@@ -209,7 +215,8 @@ def chooseColors(numColors):
         if not success or cv.waitKey(1) == 27:
             break
 
-        frameBGR = cv.pyrDown(frameBGR)
+        frameBGR = cv.resize(frameBGR, (WIDTH, HEIGHT))
+        frameBGR = cv.flip(frameBGR, 1)
         frameHSV = cv.cvtColor(frameBGR, cv.COLOR_BGR2HSV)
         frameHSVBlurred = cv.GaussianBlur(frameHSV, (11, 11), 0)
 
