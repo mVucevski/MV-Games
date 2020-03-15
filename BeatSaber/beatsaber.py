@@ -3,6 +3,7 @@ import cv2 as cv
 import random
 import math
 import colorsys
+from VideoGet import VideoGet
 
 WIDTH = 640
 HEIGHT = 480
@@ -12,7 +13,7 @@ DARKGRAY = (64, 64, 64)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 
-INPUT = "video1.mp4"
+INPUT = 0
 
 ARROW = pygame.image.load("arrow.png")
 
@@ -63,6 +64,7 @@ class Scene:
 
         score = self.font.render(str(self.score), 1, RED)
         surface.blit(score, (int(WIDTH / 2 - score.get_rect()[2] / 2), int(score.get_rect()[3] / 2)))
+        self.drawFixedLine(surface)
 
     def update(self, centers, directions):
         for box in self.boxes:
@@ -82,7 +84,8 @@ class Scene:
                 continue
 
             for box in self.boxes:
-                if pointInRectangle(center, box.get_rect()) and direction == box.rotation and box.type == i and box.position[1] >= HEIGHT*3/4:
+                #if pointInRectangle(center, box.get_rect()) and direction == box.rotation and box.type == i and box.position[1] >= HEIGHT*3/4:
+                if direction == box.rotation and box.type == i and box.position[1] >= HEIGHT * 3 / 4:
                     self.score += 10
                     self.boxes.remove(box)
 
@@ -90,6 +93,8 @@ class Scene:
     def spawnBox(self, position, color, type, direction):
         self.boxes.append(Box(ARROW, position, color, type, direction))
 
+    def drawFixedLine(self, screen):
+        pygame.draw.line(screen, RED, (0, HEIGHT * 3 / 4), (WIDTH, HEIGHT * 3 / 4))
 
 def pointInRectangle(point, rectangle):
     px = point[0]
@@ -122,11 +127,13 @@ def runGame(hsvcolors):
     surface = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption('Dance Game')
 
-    cap = cv.VideoCapture(INPUT)
+    video_getter = VideoGet(INPUT).start()
 
-    if not cap.isOpened():
+    if not video_getter.grabbed:
         print("Error loading stream or video.")
-        cap.release()
+        #cap.release()
+        video_getter.stream.release()
+        video_getter.stop()
         return
 
     scene = Scene()
@@ -136,22 +143,24 @@ def runGame(hsvcolors):
 
     rgbcolors = []
     for hsv in hsvcolors:
-        rgb = colorsys.hsv_to_rgb(hsv[0] * 2, hsv[1] / 255, hsv[2] / 255)
+        rgb = colorsys.hsv_to_rgb( hsv[0] / 180, hsv[1] / 255, hsv[2] / 255)
         rgb = (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
         rgbcolors.append(rgb)
 
-    while cap.isOpened():
+    while video_getter.stream.isOpened():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                cap.release()
+                video_getter.stream.release()
+                video_getter.stop()
                 return
 
-        success, frameBGR = cap.read()
+        success, frameBGR = video_getter.grabbed, video_getter.frame
 
         if not success:
             pygame.quit()
-            cap.release()
+            video_getter.stream.release()
+            video_getter.stop()
             return
 
         if spawnBoxTimer > 0:
@@ -169,12 +178,14 @@ def runGame(hsvcolors):
         frameBGR = cv.resize(frameBGR, (WIDTH, HEIGHT))
         frameBGR = cv.flip(frameBGR, 1)
         centers = getCenters(frameBGR, hsvcolors)
+        # cv.circle(frameBGR, centers[0], 8, (0, 0, 0), -1)
+        # cv.circle(frameBGR, centers[1], 8, (0, 0, 0), -1)
 
         img = cvimage_to_pygame(frameBGR)
         surface.blit(img, (0, 0))
 
 
-        directions = getDirections(pCenters, centers)
+        directions = getDirections(pCenters, centers, 50)
         scene.update(centers, directions)
         scene.draw(surface)
 
@@ -285,7 +296,7 @@ def getCenters(image, colors):
         contours = sorted(contours, key=lambda x: cv.contourArea(x), reverse=True)
 
         center = None
-        if len(contours[0] > 0):
+        if contours.__len__() > 0:
             biggestContour = [contours[0]]
             center = getCenter(biggestContour)
         centers.append(center)
@@ -308,13 +319,19 @@ def getCenter(contour, absolute=True):
 
 
 def getDirections(prev, curr, minDistance = 10):
-
-    if prev is None or curr is None:
+    print("PREV:")
+    print(prev)
+    print("CURR:")
+    print(curr)
+    if not prev or not curr:
         return None
 
     directions = []
 
     for i in range(len(curr)):
+        if prev[i] is None or curr[i] is None:
+            directions.append(None)
+            continue
         x1 = prev[i][0]
         y1 = prev[i][1]
         x2 = curr[i][0]
