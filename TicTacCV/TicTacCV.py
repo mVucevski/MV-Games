@@ -4,8 +4,8 @@ import time
 from TicTacToe import TicTacToe
 
 # CONSTANTS
-WINDOW_WIDTH = 480
-WINDOW_HEIGHT = 360
+WINDOW_WIDTH = 680
+WINDOW_HEIGHT = 420
 WHITE = (255, 255, 255)
 RED = (0, 0, 255)
 GREEN = (0, 255, 0)
@@ -110,8 +110,8 @@ def drawBlockRectengle(image, start_cordinates, rectengleHeight, rectengleWidth,
     return None
 
 def drawCharacters(image, char, cordPos, rectengleHeight, rectengleWidth, color=WHITE):
-    position = (cordPos[1] * rectengleHeight + 15, cordPos[0] * rectengleWidth + rectengleWidth)
-    cv2.putText(image, char, position, cv2.FONT_HERSHEY_SIMPLEX, 4.5, color, 2)
+    position = (cordPos[1] * rectengleHeight + 40, cordPos[0] * rectengleWidth + rectengleWidth - 20)
+    cv2.putText(image, char, position, cv2.FONT_HERSHEY_SIMPLEX, 6, color, 2)
 
 def drawWinningLine(image, startPos, endPos, rectengleHeight, rectengleWidth):
     startPos = (startPos[1] * rectengleHeight + rectengleHeight//2, startPos[0] * rectengleWidth + rectengleWidth//2)
@@ -186,8 +186,8 @@ def mainLoop(camera):
         #cv2.imshow("Block 1", blocks[0])
 
         if isDraw or winner_pos is not None:
+            # Restart the game
             if hasTimerPassed(start_time, END_SCREEN_S):
-                print("RESTART!!!!")
                 game.newBoard()
                 timer_active = False
                 pressedBlockNonBlackPixes = 0

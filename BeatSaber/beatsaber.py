@@ -3,6 +3,7 @@ import cv2 as cv
 import random
 import math
 import colorsys
+import numpy as np
 from VideoGet import VideoGet
 
 WIDTH = 640
@@ -204,6 +205,16 @@ def onMouse(event, x, y, flags, param):
     if event == cv.EVENT_LBUTTONUP:
         MOUSELCLICK = False
 
+def drawPickedColorsBoxes(image, colors):
+    cv.putText(image, "Please select 2 colors", (10,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
+    if len(colors) > 0:
+        cv.putText(image, "Color 1:", (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        color1 = (int(colors[0][0]),int(colors[0][1]),int(colors[0][2]))
+        cv.rectangle(image, (90, 25), (110, 45), color1, thickness=-1, lineType=1)
+    if len(colors) > 1:
+        cv.putText(image, "Color 2:", (10, 60), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        color2 = (int(colors[1][0]),int(colors[1][1]),int(colors[1][2]))
+        cv.rectangle(image, (90, 45), (110, 65), color2, thickness=-1, lineType=1)
 
 def chooseColors(numColors):
     global MOUSELCLICK
@@ -219,6 +230,7 @@ def chooseColors(numColors):
     cv.setMouseCallback("Choose Color", onMouse)
 
     colors = []
+    colorsBGR = []
 
     while cap.isOpened():
         success, frameBGR = cap.read()
@@ -231,11 +243,13 @@ def chooseColors(numColors):
         frameHSV = cv.cvtColor(frameBGR, cv.COLOR_BGR2HSV)
         frameHSVBlurred = cv.GaussianBlur(frameHSV, (11, 11), 0)
 
+        drawPickedColorsBoxes(frameBGR, colorsBGR)
 
         if MOUSELCLICK:
             x = MOUSEPOS[0]
             y = MOUSEPOS[1]
             colors.append(frameHSVBlurred[y][x])
+            colorsBGR.append(frameBGR[y][x])
             numColors -= 1
             MOUSELCLICK = False
 
@@ -319,10 +333,6 @@ def getCenter(contour, absolute=True):
 
 
 def getDirections(prev, curr, minDistance = 10):
-    print("PREV:")
-    print(prev)
-    print("CURR:")
-    print(curr)
     if not prev or not curr:
         return None
 
