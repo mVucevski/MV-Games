@@ -1,13 +1,8 @@
-import numpy as np
 import cv2 as cv
-import math
-import time
 from VideoGet import VideoGet
+from DanceGame import WIDTH, HEIGHT
 
 input = 0
-
-CLICKS = []
-
 
 def initCV():
     cap = cv.VideoCapture(input)
@@ -17,56 +12,43 @@ def initCV():
         cap.release()
         return
 
-    #cv.namedWindow("Dance Game")
-
-    pFrameBGR = None
-
     video_getter = VideoGet(input).start()
-
 
     return cap, video_getter
 
-def mainCV(cap, pFrameBGR=None, video_getter=None):
-
-    #success, frameBGR = cap.read()
-    #if video_getter:
+def mainCV(pFrameBGR, video_getter=None):
     success, frameBGR = video_getter.grabbed, video_getter.frame
 
     if not success:
         return
 
-    frameBGR = cv.pyrDown(frameBGR)
+    frameBGR = cv.resize(frameBGR, (WIDTH, HEIGHT))
 
     if pFrameBGR is None:
-        pFrameBGR = frameBGR
+        pFrameBGR = frameBGR.copy()
+
+    cFrameBGR = frameBGR.copy()
+
+    pFrameBGR = cv.flip(pFrameBGR, 1)
+    cFrameBGR = cv.flip(cFrameBGR, 1)
 
     pBlocks = divideImageInBlocks(pFrameBGR, 96, 96)
-    blocks = divideImageInBlocks(frameBGR, 96, 96)
+    blocks = divideImageInBlocks(cFrameBGR, 96, 96)
 
     masks = []
     for i in range(len(blocks)):
         masks.append(detectMotion(pBlocks[i], blocks[i]))
+
     movements = []
-    # change = []
-    CLICKS.clear()
-    for i in range(masks.__len__()):
-        # movements.append(cv.countNonZero(masks[i]))
-        isPressed = detectChange(masks[i])
-        movements.append(isPressed)
-        CLICKS.append(isPressed)
+    for mask in masks:
+        movements.append(detectChange(mask))
 
-    pFrameBGR = frameBGR
-
-    return pFrameBGR, movements
-    #cap.release()
+    return frameBGR, movements
 
 def detectChange(block, percentage=0.1):
     totalNumPixels = block.shape[0] * block.shape[1]
     requiredNumPixels = totalNumPixels * percentage
     nonZeroPixels = cv.countNonZero(block)
-
-    # print(totalNumPixels)
-    # print(nonZeroPixels)
 
     if (nonZeroPixels >= requiredNumPixels):
         return True
@@ -95,17 +77,20 @@ def divideImageInBlocks(frameBGR, blockWidth, blockHeight):
     width = frameBGR.shape[1]
     blocks = []
 
-    blocks.append(frameBGR[height - blockHeight:height, 0:blockWidth])
-    blocks.append(frameBGR[height - blockHeight:height, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
-    blocks.append(frameBGR[height - blockHeight:height, width - blockWidth:width])
+    # 0 1 2
+    # 3   4
+    # 5 6 7
 
-    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), width - blockWidth:width])
-    #blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
-    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), 0:blockWidth])
+    blocks.append(frameBGR[0:blockHeight, 0:blockWidth]) # 0
+    blocks.append(frameBGR[0:blockHeight, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)]) # 1
+    blocks.append(frameBGR[0:blockHeight, width - blockWidth:width]) # 2
 
-    blocks.append(frameBGR[0:blockHeight, 0:blockWidth])
-    blocks.append(frameBGR[0:blockHeight, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])
-    blocks.append(frameBGR[0:blockHeight, width - blockWidth:width])
+    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), 0:blockWidth]) # 3
+    blocks.append(frameBGR[int(height / 2 - blockHeight / 2):int(height / 2 + blockHeight / 2), width - blockWidth:width]) # 4
+
+    blocks.append(frameBGR[height - blockHeight:height, 0:blockWidth])  # 5
+    blocks.append(frameBGR[height - blockHeight:height, int(width / 2 - blockWidth / 2):int(width / 2 + blockWidth / 2)])  # 6
+    blocks.append(frameBGR[height - blockHeight:height, width - blockWidth:width])  # 7
 
     return blocks
 

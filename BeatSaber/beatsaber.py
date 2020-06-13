@@ -148,6 +148,9 @@ def runGame(hsvcolors):
         rgb = (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
         rgbcolors.append(rgb)
 
+    print(hsvcolors)
+    print(rgbcolors)
+
     while video_getter.stream.isOpened():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -179,12 +182,11 @@ def runGame(hsvcolors):
         frameBGR = cv.resize(frameBGR, (WIDTH, HEIGHT))
         frameBGR = cv.flip(frameBGR, 1)
         centers = getCenters(frameBGR, hsvcolors)
-        # cv.circle(frameBGR, centers[0], 8, (0, 0, 0), -1)
-        # cv.circle(frameBGR, centers[1], 8, (0, 0, 0), -1)
+        cv.circle(frameBGR, centers[0], 8, (0, 0, 0), -1)
+        cv.circle(frameBGR, centers[1], 8, (0, 0, 0), -1)
 
         img = cvimage_to_pygame(frameBGR)
         surface.blit(img, (0, 0))
-
 
         directions = getDirections(pCenters, centers, 50)
         scene.update(centers, directions)
@@ -262,7 +264,7 @@ def chooseColors(numColors):
     return None
 
 
-def segmentate(frameBGR, hsv, hueThr=25, satThr=50, valThr=100):
+def segmentate(frameBGR, hsv, hueThr=25, satThr=25, valThr=25):
     frameHSV = cv.cvtColor(frameBGR, cv.COLOR_BGR2HSV)
     frameHSVBlurred = cv.GaussianBlur(frameHSV, (11, 11), 0)
 
@@ -306,6 +308,7 @@ def getCenters(image, colors):
 
     for i in range(len(colors)):
         mask = segmentate(image, colors[i])
+        cv.imshow("mask " + str(i), mask)
         contours = cv.findContours(mask, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[0]
         contours = sorted(contours, key=lambda x: cv.contourArea(x), reverse=True)
 

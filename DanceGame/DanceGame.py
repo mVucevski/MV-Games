@@ -116,16 +116,20 @@ class Scene:
         boxWidth = 96
         boxHeight = 96
 
-        self.collisionBoxes.append((0, HEIGHT - boxHeight, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, HEIGHT - boxHeight, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT - boxHeight, boxWidth, boxHeight))
+        # 0 1 2
+        # 3   4
+        # 5 6 7
 
-        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
-        self.collisionBoxes.append((0, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))
+        self.collisionBoxes.append((0, 0, boxWidth, boxHeight)) # 0
+        self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, 0, boxWidth, boxHeight)) # 1
+        self.collisionBoxes.append((WIDTH - boxWidth, 0, boxWidth, boxHeight)) # 2
 
-        self.collisionBoxes.append((0, 0, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, 0, boxWidth, boxHeight))
-        self.collisionBoxes.append((WIDTH - boxWidth, 0, boxWidth, boxHeight))
+        self.collisionBoxes.append((0, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight))  # 3
+        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT / 2 - boxHeight / 2, boxWidth, boxHeight)) # 4
+
+        self.collisionBoxes.append((0, HEIGHT - boxHeight, boxWidth, boxHeight)) # 5
+        self.collisionBoxes.append((WIDTH / 2 - boxWidth / 2, HEIGHT - boxHeight, boxWidth, boxHeight)) # 6
+        self.collisionBoxes.append((WIDTH - boxWidth, HEIGHT - boxHeight, boxWidth, boxHeight)) # 7
 
         self.initGoalsArrows()
         self.initMusic()
@@ -175,24 +179,16 @@ class Scene:
     def addArrow(self, arrow):
         self.arrows.append(arrow)
 
-    def update(self, mousePos):
+    def update(self, movements):
         if pygame.mixer.music.get_busy():
             for arrow in self.arrows:
                 arrow.update()
                 if arrow.outOfBounds():
                     self.arrows.remove(arrow)
                     self.score -= 10
-                # if mousePos is not None:
-                #     for cb in self.collisionBoxes:
-                #         if pointInRectangle(arrow.position, cb) and pointInRectangle(mousePos, cb):
-                #             randomColor = random.choice(COLOR_PICKER)
-                #             glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
-                #             self.glowObjects.append(glowObj)
-                #             self.arrows.remove(arrow)
-                #             self.score += 10
                 for i in range(len(self.collisionBoxes)):
                     cb = self.collisionBoxes[i]
-                    if pointInRectangle(arrow.position, cb) and DGCV.CLICKS[i]:
+                    if pointInRectangle(arrow.position, cb) and movements[i]:
                         randomColor = random.choice(COLOR_PICKER)
                         glowObj = Glow(self.glow, (cb[0], cb[1]), randomColor, 10)
                         self.glowObjects.append(glowObj)
@@ -247,18 +243,16 @@ def main():
     arrowTimer = 1
 
     cap, video_getter = DGCV.initCV()
-    frame = None
+
+    pFrame = None
 
     while True:
-        mousePos = None
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 video_getter.stop()
                 cap.release()
                 pygame.quit()
                 return
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mousePos = pygame.mouse.get_pos()
 
         if arrowTimer > 0:
             arrowTimer -= delta
@@ -270,17 +264,18 @@ def main():
                     arrowTimer = random.randint(1000, 2000)
 
         surface.fill(DARKGRAY)
-        frame, movments = DGCV.mainCV(cap, frame, video_getter)
+        frame, movements = DGCV.mainCV(pFrame, video_getter)
         draw_frame = DGCV.convertBGR2RGB(frame)
         draw_frame = pygame.surfarray.make_surface(draw_frame)
-        draw_frame = pygame.transform.rotozoom(draw_frame, -90, 2)
+        draw_frame = pygame.transform.rotozoom(draw_frame, 270, 1)
         surface.blit(draw_frame, (0, 0))
 
-        scene.update(mousePos)
+        scene.update(movements)
         scene.draw(surface)
         pygame.display.update()
 
-        mousePos = None
+        pFrame = frame
+
         delta = fpsClock.tick(FPS)
 
 if __name__ == "__main__":
