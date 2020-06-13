@@ -1,4 +1,5 @@
 *.mp3
 venv/*
 .idea/*
-__pycache__/*
+DanceGame/__pycache__/*
+TicTacCV/__pycache__/*

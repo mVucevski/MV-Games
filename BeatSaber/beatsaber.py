@@ -3,8 +3,8 @@ import cv2 as cv
 import random
 import math
 import colorsys
-import numpy as np
 from VideoGet import VideoGet
+import time
 
 WIDTH = 640
 HEIGHT = 480
@@ -85,7 +85,7 @@ class Scene:
                 continue
 
             for box in self.boxes:
-                #if pointInRectangle(center, box.get_rect()) and direction == box.rotation and box.type == i and box.position[1] >= HEIGHT*3/4:
+                # pointInRectangle(center, box.get_rect())
                 if direction == box.rotation and box.type == i and box.position[1] >= HEIGHT * 3 / 4:
                     self.score += 10
                     self.boxes.remove(box)
@@ -148,9 +148,6 @@ def runGame(hsvcolors):
         rgb = (int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
         rgbcolors.append(rgb)
 
-    print(hsvcolors)
-    print(rgbcolors)
-
     while video_getter.stream.isOpened():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -188,7 +185,7 @@ def runGame(hsvcolors):
         img = cvimage_to_pygame(frameBGR)
         surface.blit(img, (0, 0))
 
-        directions = getDirections(pCenters, centers, 50)
+        directions = getDirections(pCenters, centers, 10)
         scene.update(centers, directions)
         scene.draw(surface)
 
@@ -208,15 +205,11 @@ def onMouse(event, x, y, flags, param):
         MOUSELCLICK = False
 
 def drawPickedColorsBoxes(image, colors):
-    cv.putText(image, "Please select 2 colors", (10,20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
-    if len(colors) > 0:
-        cv.putText(image, "Color 1:", (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        color1 = (int(colors[0][0]),int(colors[0][1]),int(colors[0][2]))
-        cv.rectangle(image, (90, 25), (110, 45), color1, thickness=-1, lineType=1)
-    if len(colors) > 1:
-        cv.putText(image, "Color 2:", (10, 60), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-        color2 = (int(colors[1][0]),int(colors[1][1]),int(colors[1][2]))
-        cv.rectangle(image, (90, 45), (110, 65), color2, thickness=-1, lineType=1)
+    cv.putText(image, "Please select 2 colors", (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    for i in range(len(colors)):
+        cv.putText(image, "Color" + str(i+1), (10, 45 + i*25), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+        color = (int(colors[i][0]), int(colors[i][1]), int(colors[i][2]))
+        cv.rectangle(image, (90, 25 + i*25), (110, 45 + i*25), color, thickness=-1, lineType=1)
 
 def chooseColors(numColors):
     global MOUSELCLICK
@@ -233,6 +226,8 @@ def chooseColors(numColors):
 
     colors = []
     colorsBGR = []
+    done = False
+    timer = 100
 
     while cap.isOpened():
         success, frameBGR = cap.read()
@@ -247,7 +242,13 @@ def chooseColors(numColors):
 
         drawPickedColorsBoxes(frameBGR, colorsBGR)
 
-        if MOUSELCLICK:
+        if done:
+            timer -= 1
+            if timer <= 0:
+                cv.destroyWindow("Choose Color")
+                return colors
+
+        if MOUSELCLICK and not done:
             x = MOUSEPOS[0]
             y = MOUSEPOS[1]
             colors.append(frameHSVBlurred[y][x])
@@ -256,8 +257,7 @@ def chooseColors(numColors):
             MOUSELCLICK = False
 
             if numColors == 0:
-                cv.destroyWindow("Choose Color")
-                return colors
+                done = True
 
         cv.imshow("Choose Color", frameBGR)
     cap.release()
@@ -308,7 +308,6 @@ def getCenters(image, colors):
 
     for i in range(len(colors)):
         mask = segmentate(image, colors[i])
-        cv.imshow("mask " + str(i), mask)
         contours = cv.findContours(mask, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)[0]
         contours = sorted(contours, key=lambda x: cv.contourArea(x), reverse=True)
 
